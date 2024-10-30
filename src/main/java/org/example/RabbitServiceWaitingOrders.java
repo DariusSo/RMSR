@@ -14,7 +14,7 @@ public class RabbitServiceWaitingOrders implements Runnable{
     private static final String HOST = "localhost";
     private final ConnectionFactory factory;
     private final ObjectMapper objectMapper;
-    MongoDBService mongoDBService = new MongoDBService();
+    MongoDBRepository mongoDBRepository = new MongoDBRepository();
     RedisService redisService = new RedisService("localhost", 6379);
 
     private long recievedCount = 0;
@@ -36,8 +36,6 @@ public class RabbitServiceWaitingOrders implements Runnable{
 
             channel.queueDeclare("Oreder_queue", false, false, false, null);
 
-            //channel.basicQos(1);
-
             DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                 String jsonMessage = new String(delivery.getBody(), "UTF-8");
                 System.out.println(recievedCount+" Got JSON: " + jsonMessage);
@@ -47,11 +45,8 @@ public class RabbitServiceWaitingOrders implements Runnable{
 
                     channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
 
-                    mongoDBService.addOrder(order);
+                    mongoDBRepository.addOrder(order);
                     redisService.put(order.getOrderId(), order);
-
-//                    sendEmail(email);
-//                    repository.saveEmail(email);
 
                 }catch (Exception e){
                     e.printStackTrace();

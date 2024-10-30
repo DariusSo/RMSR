@@ -19,18 +19,34 @@ public class RedisService {
 
     public void put(String orderId, Object value) throws IOException {
         try (Jedis jedis = jedisPool.getResource()) {
-            jedis.set(orderId.getBytes(), serialize(value));
+            jedis.setex(orderId.getBytes(), 300, serialize(value));
             System.out.println("Added Order (Redis): " + orderId);
         }
     }
 
-    public Object get(String key) throws IOException, ClassNotFoundException {
+    public Order get(String key) throws IOException, ClassNotFoundException {
         try (Jedis jedis = jedisPool.getResource()) {
             byte[] data = jedis.get(key.getBytes());
             if (data != null) {
                 return deserialize(data);
             }
             return null;
+        }
+    }
+    public void updateOrder(Order order) throws IOException, ClassNotFoundException {
+        Order fetchedOrder = get(order.getOrderId());
+        if(fetchedOrder != null){
+            fetchedOrder.setStatus(order.getStatus());
+            put(fetchedOrder.getOrderId(), fetchedOrder);
+        }
+    }
+
+    public void acceptPayment(String id, String paymentMethod, double totalPrice) throws IOException, ClassNotFoundException {
+        Order fetchedOrder = get(id);
+        if(fetchedOrder != null){
+            fetchedOrder.setPaymentMethod(paymentMethod);
+            fetchedOrder.setTotalPrice(totalPrice);
+            put(fetchedOrder.getOrderId(), fetchedOrder);
         }
     }
 
@@ -40,9 +56,9 @@ public class RedisService {
         return json;
     }
 
-    private List<Integer> deserialize(byte[] data) throws IOException, ClassNotFoundException {
+    private Order deserialize(byte[] data) throws IOException, ClassNotFoundException {
 
-        List<Integer> obj = objectMapper.readValue(data, List.class);
+        Order obj = objectMapper.readValue(data, Order.class);
         return obj;
     }
 

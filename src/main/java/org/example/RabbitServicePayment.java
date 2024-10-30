@@ -7,10 +7,10 @@ import com.rabbitmq.client.ConnectionFactory;
 import com.rabbitmq.client.DeliverCallback;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
-public class RabbitServiceChangeStatus implements Runnable{
-
+public class RabbitServicePayment implements Runnable{
     private static final String HOST = "localhost";
     private final ConnectionFactory factory;
     private final ObjectMapper objectMapper;
@@ -19,7 +19,7 @@ public class RabbitServiceChangeStatus implements Runnable{
 
     private long recievedCount = 0;
 
-    public RabbitServiceChangeStatus() {
+    public RabbitServicePayment() {
         this.factory = new ConnectionFactory();
         factory.setHost(HOST);
         factory.setPort(5672);
@@ -34,19 +34,19 @@ public class RabbitServiceChangeStatus implements Runnable{
         try(Connection connection = factory.newConnection();
             Channel channel = connection.createChannel()) {
 
-            channel.queueDeclare("Status_queue", false, false, false, null);
+            channel.queueDeclare("Payment_queue", false, false, false, null);
 
             DeliverCallback deliverCallback = (consumerTag, delivery) -> {
                 String jsonMessage = new String(delivery.getBody(), "UTF-8");
                 System.out.println(recievedCount+" Got JSON: " + jsonMessage);
                 recievedCount++;
                 try {
-                    Order order = objectMapper.readValue(jsonMessage, Order.class);
+                    Map<String, String> info = objectMapper.readValue(jsonMessage, Map.class);
 
                     channel.basicAck(delivery.getEnvelope().getDeliveryTag(), false);
 
-                    mongoDBRepository.updateOrder(order.getOrderId(), order.getStatus());
-                    redisService.updateOrder(order);
+                    mongoDBRepository.acceptPayment(info.get("orderId"), info.get("paymentMethod"), Double.parseDouble(info.get("totalPrice")));
+                    redisService.acceptPayment(info.get("orderId"), info.get("paymentMethod"), Double.parseDouble(info.get("totalPrice")));
 
                 }catch (Exception e){
                     e.printStackTrace();
@@ -54,7 +54,7 @@ public class RabbitServiceChangeStatus implements Runnable{
                     channel.basicNack(delivery.getEnvelope().getDeliveryTag(), false, true);
                 }
             };
-            channel.basicConsume("Status_queue", false, deliverCallback, consumerTag -> {});
+            channel.basicConsume("Payment_queue", false, deliverCallback, consumerTag -> {});
 
             System.out.println("Waiting");
             while(true) {

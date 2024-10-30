@@ -12,21 +12,46 @@ public class Order {
     private String status;
     private LocalDateTime orderTime;
     private LocalDateTime proccessingTime;
+    private double totalPrice;
+    private String paymentMethod;
 
-    public Order(String id, String orderId, String client, int table, List<String> dishes, String status, LocalDateTime orderTime, LocalDateTime proccessingTime) {
-        this.id = id;
+    public Order(String orderId, int table, String client, List<String> dishes, LocalDateTime orderTime, String status, LocalDateTime proccessingTime, double totalPrice, String paymentMethod) {
         this.orderId = orderId;
-        this.client = client;
         this.table = table;
+        this.client = client;
         this.dishes = dishes;
-        this.status = status;
         this.orderTime = orderTime;
+        this.status = status;
         this.proccessingTime = proccessingTime;
+        this.totalPrice = totalPrice;
+        this.paymentMethod = paymentMethod;
     }
 
-
-
     public Order() {
+    }
+
+    public double getTotalPrice() {
+        return totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getOrderId() {
@@ -83,13 +108,5 @@ public class Order {
 
     public void setProccessingTime(LocalDateTime proccessingTime) {
         this.proccessingTime = proccessingTime;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 }
